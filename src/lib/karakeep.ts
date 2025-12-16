@@ -194,3 +194,118 @@ export async function getFavoritedBookmarks(
   });
   return response.bookmarks;
 }
+
+// ============================================================================
+// Mutation Functions
+// ============================================================================
+
+/**
+ * Update bookmark properties (title, note, archived, favourited)
+ */
+export async function updateBookmark(
+  bookmarkId: string,
+  updates: {
+    title?: string;
+    note?: string;
+    archived?: boolean;
+    favourited?: boolean;
+  }
+): Promise<Bookmark> {
+  return karakeepFetch<Bookmark>(`/bookmarks/${bookmarkId}`, {
+    method: "PATCH",
+    body: JSON.stringify(updates),
+  });
+}
+
+/**
+ * Delete a bookmark
+ */
+export async function deleteBookmark(bookmarkId: string): Promise<void> {
+  await karakeepFetch(`/bookmarks/${bookmarkId}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Attach tags to a bookmark (uses MCP server internally)
+ * Note: This should be called from a Next.js API route that has access to MCP tools
+ */
+export async function addTagsToBookmark(
+  bookmarkId: string,
+  tags: string[]
+): Promise<void> {
+  // This will be called from Next.js API route that wraps the MCP tool
+  // karakeep-attach-tag-to-bookmark
+  const response = await fetch("/api/bookmarks/tags", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookmarkId, tags, action: "attach" }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to attach tags: ${response.statusText}`);
+  }
+}
+
+/**
+ * Detach tags from a bookmark (uses MCP server internally)
+ * Note: This should be called from a Next.js API route that has access to MCP tools
+ */
+export async function removeTagsFromBookmark(
+  bookmarkId: string,
+  tags: string[]
+): Promise<void> {
+  // This will be called from Next.js API route that wraps the MCP tool
+  // karakeep-detach-tag-from-bookmark
+  const response = await fetch("/api/bookmarks/tags", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookmarkId, tags, action: "detach" }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to detach tags: ${response.statusText}`);
+  }
+}
+
+/**
+ * Add bookmark to a list (uses MCP server internally)
+ * Note: This should be called from a Next.js API route that has access to MCP tools
+ */
+export async function addBookmarkToList(
+  bookmarkId: string,
+  listId: string
+): Promise<void> {
+  // This will be called from Next.js API route that wraps the MCP tool
+  // karakeep-add-bookmark-to-list
+  const response = await fetch("/api/bookmarks/lists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookmarkId, listId, action: "add" }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to add bookmark to list: ${response.statusText}`);
+  }
+}
+
+/**
+ * Remove bookmark from a list (uses MCP server internally)
+ * Note: This should be called from a Next.js API route that has access to MCP tools
+ */
+export async function removeBookmarkFromList(
+  bookmarkId: string,
+  listId: string
+): Promise<void> {
+  // This will be called from Next.js API route that wraps the MCP tool
+  // karakeep-remove-bookmark-from-list
+  const response = await fetch("/api/bookmarks/lists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookmarkId, listId, action: "remove" }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to remove bookmark from list: ${response.statusText}`);
+  }
+}
