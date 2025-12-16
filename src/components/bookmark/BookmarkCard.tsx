@@ -1,11 +1,28 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import type { Bookmark } from "@/types";
 import { getBookmarkScreenshotUrl, getBookmarkTitle } from "@/lib/karakeep";
+import { QuickActions } from "./QuickActions";
+import { cn } from "@/lib/utils";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
   /** Show full summary without truncation */
   expandSummary?: boolean;
+  /** Selection mode - show checkbox and enable selection */
+  isSelectionMode?: boolean;
+  /** Whether this bookmark is selected */
+  isSelected?: boolean;
+  /** Callback when selection state changes */
+  onToggleSelection?: () => void;
+  /** Callback when bookmark is updated */
+  onUpdate?: (updated: Bookmark) => void;
+  /** Callback when bookmark is deleted */
+  onDelete?: (id: string) => void;
+  /** Callback to open edit modal */
+  onEdit?: () => void;
 }
 
 /**
@@ -13,8 +30,19 @@ interface BookmarkCardProps {
  *
  * Features large screenshot hero, AI-generated summaries,
  * tag chips with AI/human distinction, and subtle hover states.
+ * Supports selection mode and quick actions.
  */
-export function BookmarkCard({ bookmark, expandSummary = false }: BookmarkCardProps) {
+export function BookmarkCard({
+  bookmark,
+  expandSummary = false,
+  isSelectionMode = false,
+  isSelected = false,
+  onToggleSelection,
+  onUpdate,
+  onDelete,
+  onEdit,
+}: BookmarkCardProps) {
+  const [showActions, setShowActions] = useState(false);
   const screenshotUrl = getBookmarkScreenshotUrl(bookmark);
   const title = getBookmarkTitle(bookmark);
   const url = bookmark.content?.url;
@@ -30,8 +58,29 @@ export function BookmarkCard({ bookmark, expandSummary = false }: BookmarkCardPr
   const humanTags = bookmark.tags?.filter((t) => t.attachedBy === "human") || [];
   const allTags = [...humanTags, ...aiTags]; // Human tags first, then AI
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // In selection mode, clicking the card toggles selection
+    if (isSelectionMode && onToggleSelection) {
+      e.preventDefault();
+      onToggleSelection();
+    }
+  };
+
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-all duration-300 ease-out hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5">
+    <article
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-lg border bg-card transition-all duration-300 ease-out",
+        isSelectionMode
+          ? "cursor-pointer"
+          : "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+        isSelected
+          ? "border-primary ring-2 ring-primary/20"
+          : "border-border"
+      )}
+      onClick={handleCardClick}
+      onMouseEnter={() => !isSelectionMode && setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
       {/* Screenshot Hero */}
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         {screenshotUrl ? (
@@ -72,6 +121,52 @@ export function BookmarkCard({ bookmark, expandSummary = false }: BookmarkCardPr
 
         {/* Subtle gradient overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+        {/* Selection checkbox (top left) */}
+        {isSelectionMode && (
+          <div className="absolute left-3 top-3 z-20">
+            <div
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-md border-2 bg-background shadow-sm transition-all",
+                isSelected
+                  ? "border-primary bg-primary"
+                  : "border-muted-foreground/30 hover:border-primary"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelection?.();
+              }}
+            >
+              {isSelected && (
+                <svg
+                  className="h-4 w-4 text-primary-foreground"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* QuickActions (bottom right, appears on hover in normal mode) */}
+        {!isSelectionMode && showActions && (
+          <div className="absolute bottom-3 right-3 z-20 animate-in fade-in-0 zoom-in-95 duration-200">
+            <QuickActions
+              bookmark={bookmark}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
+          </div>
+        )}
 
         {/* Top right indicators */}
         <div className="absolute right-3 top-3 flex items-center gap-2">
