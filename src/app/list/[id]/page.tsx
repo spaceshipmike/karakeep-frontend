@@ -1,0 +1,93 @@
+import { notFound } from "next/navigation";
+import { AppShell } from "@/components/layout";
+import { BookmarkGrid } from "@/components/bookmark";
+import { getLists, getBookmarksByList } from "@/lib/karakeep";
+import type { List } from "@/types";
+
+interface ListPageProps {
+  params: Promise<{ id: string }>;
+}
+
+/**
+ * Find a list by ID, including nested children
+ */
+function findListById(lists: List[], id: string): List | undefined {
+  for (const list of lists) {
+    if (list.id === id) return list;
+    if (list.children) {
+      const found = findListById(list.children, id);
+      if (found) return found;
+    }
+  }
+  // Also check flat structure (API may return flat with parentId)
+  return lists.find((l) => l.id === id);
+}
+
+/**
+ * Find parent list for breadcrumb display
+ */
+function findParentList(lists: List[], parentId: string | null): List | undefined {
+  if (!parentId) return undefined;
+  return lists.find((l) => l.id === parentId);
+}
+
+export default async function ListPage({ params }: ListPageProps) {
+  const { id } = await params;
+
+  // Fetch lists and bookmarks in parallel
+  const [lists, bookmarksResult] = await Promise.all([
+    getLists().catch(() => []),
+    getBookmarksByList(id, { limit: 30, sortOrder: "desc" }).catch(() => ({
+      bookmarks: [],
+      nextCursor: null,
+    })),
+  ]);
+
+  // Find the current list
+  const currentList = findListById(lists, id);
+
+  if (!currentList) {
+    notFound();
+  }
+
+  const parentList = findParentList(lists, currentList.parentId);
+  const bookmarks = bookmarksResult.bookmarks;
+
+  return (
+    <AppShell lists={lists}>
+      {/* Page header with optional breadcrumb */}
+      <header className="mb-12">
+        {parentList && (
+          <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-muted-foreground/60">
+            {parentList.name} /
+          </div>
+        )}
+        <h1 className="font-display text-4xl font-medium tracking-tight text-foreground md:text-5xl">
+          {currentList.name}
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          {bookmarks.length} bookmark{bookmarks.length !== 1 ? "s" : ""} in this collection
+        </p>
+      </header>
+
+      {/* Bookmarks grid */}
+      <BookmarkGrid
+        bookmarks={bookmarks}
+        emptyTitle="No bookmarks"
+        emptyMessage={`Add bookmarks to "${currentList.name}" to see them here.`}
+      />
+    </AppShell>
+  );
+}
+
+/**
+ * Generate static params for all known lists
+ */
+export async function generateStaticParams() {
+  try {
+    const lists = await getLists();
+    return lists.map((list) => ({ id: list.id }));
+  } catch {
+    return [];
+  }
+}
