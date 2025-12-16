@@ -54,6 +54,9 @@ export interface Bookmark {
   tags: Tag[];
   content: BookmarkContent;
   assets: Asset[];
+  // AI processing status indicators (optional fields from API)
+  summarizationStatus?: "success" | "pending";
+  taggingStatus?: "success" | "pending";
 }
 
 /**

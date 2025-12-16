@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Bookmark } from "@/types";
 import { getBookmarkScreenshotUrl, getBookmarkTitle } from "@/lib/karakeep";
 import { QuickActions } from "./QuickActions";
+import { AIStatusBadge } from "./AIStatusBadge";
 import { cn } from "@/lib/utils";
 
 interface BookmarkCardProps {
@@ -170,6 +171,13 @@ export function BookmarkCard({
 
         {/* Top right indicators */}
         <div className="absolute right-3 top-3 flex items-center gap-2">
+          {/* AI Processing indicator */}
+          <AIStatusBadge
+            summarizationStatus={bookmark.summarizationStatus}
+            taggingStatus={bookmark.taggingStatus}
+            variant="compact"
+          />
+
           {/* Favourited indicator */}
           {bookmark.favourited && (
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-primary shadow-sm backdrop-blur-sm">
