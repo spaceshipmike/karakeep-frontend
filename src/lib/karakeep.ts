@@ -133,9 +133,10 @@ export async function getBookmark(
 
 /**
  * Construct asset URL for screenshots and images
+ * Uses local proxy route to handle auth (Karakeep may be behind PocketID)
  */
 export function getAssetUrl(assetId: string): string {
-  return `${API_URL}/api/assets/${assetId}`;
+  return `/api/assets/${assetId}`;
 }
 
 /**
