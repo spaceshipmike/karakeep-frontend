@@ -73,16 +73,27 @@ export function BookmarkCard({ bookmark, expandSummary = false }: BookmarkCardPr
         {/* Subtle gradient overlay for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-        {/* Favourited indicator */}
-        {bookmark.favourited && (
-          <div className="absolute right-3 top-3">
+        {/* Top right indicators */}
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {/* Favourited indicator */}
+          {bookmark.favourited && (
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-primary shadow-sm backdrop-blur-sm">
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
             </span>
-          </div>
-        )}
+          )}
+          {/* Detail page link */}
+          <Link
+            href={`/bookmark/${bookmark.id}`}
+            className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-all hover:text-foreground group-hover:opacity-100"
+            title="View details"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+          </Link>
+        </div>
       </div>
 
       {/* Content */}

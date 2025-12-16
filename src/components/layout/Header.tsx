@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Icon } from "./Sidebar";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -74,9 +75,9 @@ export function Header({
         </div>
       </form>
 
-      {/* Right side actions - placeholder for future features */}
+      {/* Right side actions */}
       <div className="flex items-center gap-2">
-        {/* Dark mode toggle, user menu, etc. could go here */}
+        <ThemeToggle />
       </div>
     </header>
   );

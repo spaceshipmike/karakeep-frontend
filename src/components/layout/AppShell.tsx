@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
@@ -17,15 +17,19 @@ export function AppShell({ lists, children }: AppShellProps) {
 
   return (
     <div className="relative min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <Sidebar lists={lists} className="fixed inset-y-0 left-0 hidden md:flex" />
+      {/* Desktop Sidebar - Suspense needed for useSearchParams */}
+      <Suspense fallback={<div className="fixed inset-y-0 left-0 hidden w-64 border-r border-sidebar-border bg-sidebar md:block" />}>
+        <Sidebar lists={lists} className="fixed inset-y-0 left-0 hidden md:flex" />
+      </Suspense>
 
-      {/* Mobile Navigation */}
-      <MobileNav
-        lists={lists}
-        isOpen={isMobileNavOpen}
-        onClose={() => setIsMobileNavOpen(false)}
-      />
+      {/* Mobile Navigation - Suspense needed for useSearchParams */}
+      <Suspense fallback={null}>
+        <MobileNav
+          lists={lists}
+          isOpen={isMobileNavOpen}
+          onClose={() => setIsMobileNavOpen(false)}
+        />
+      </Suspense>
 
       {/* Main content area */}
       <div className="flex min-h-screen flex-col md:pl-64">

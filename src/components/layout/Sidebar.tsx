@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { List } from "@/types";
 
@@ -30,6 +30,8 @@ const listIcons: Record<string, string> = {
   Homelab: "server",
   Inbox: "inbox",
   Tagless: "tag",
+  Favourites: "star",
+  Archive: "archive",
 };
 
 function getListIcon(name: string): string {
@@ -140,6 +142,16 @@ function Icon({ name, className }: { name: string; className?: string }) {
     tag: (
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01" />
     ),
+    star: (
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    ),
+    archive: (
+      <>
+        <polyline points="21 8 21 21 3 21 3 8" />
+        <rect x="1" y="3" width="22" height="5" />
+        <line x1="10" y1="12" x2="14" y2="12" />
+      </>
+    ),
     bookmark: (
       <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
     ),
@@ -221,6 +233,8 @@ function ListItem({
 
 export function Sidebar({ lists, className }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentQuery = searchParams.get("q") || "";
 
   // Organize lists into top-level and children
   const topLevelLists = lists.filter((l) => !l.parentId);
@@ -236,8 +250,15 @@ export function Sidebar({ lists, className }: SidebarProps) {
   );
 
   // Separate smart lists (have query) from regular lists
-  const smartLists = topLevelLists.filter((l) => l.query);
+  const apiSmartLists = topLevelLists.filter((l) => l.query);
   const regularLists = topLevelLists.filter((l) => !l.query);
+
+  // Add built-in smart lists that aren't in the API
+  const builtInSmartLists: List[] = [
+    { id: "_favourites", name: "Favourites", icon: "star", query: "is:fav", parentId: null },
+    { id: "_archive", name: "Archive", icon: "archive", query: "is:archived", parentId: null },
+  ];
+  const smartLists = [...apiSmartLists, ...builtInSmartLists];
 
   return (
     <aside
@@ -268,12 +289,42 @@ export function Sidebar({ lists, className }: SidebarProps) {
                 <ListItem
                   key={list.id}
                   list={list}
-                  isActive={pathname === `/list/${list.id}`}
+                  isActive={pathname === "/search" && currentQuery === list.query}
                 />
               ))}
             </div>
           </div>
         )}
+
+        {/* Browse Section */}
+        <div className="mb-6">
+          <h2 className="mb-2 px-3 font-mono text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/40">
+            Browse
+          </h2>
+          <div className="space-y-0.5">
+            <Link
+              href="/tags"
+              className={cn(
+                "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                pathname === "/tags" || pathname.startsWith("/tag/")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "text-sidebar-foreground/80"
+              )}
+            >
+              <Icon
+                name="tag"
+                className={cn(
+                  "shrink-0 transition-colors",
+                  pathname === "/tags" || pathname.startsWith("/tag/")
+                    ? "text-sidebar-primary"
+                    : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/70"
+                )}
+              />
+              <span className="truncate">Tags</span>
+            </Link>
+          </div>
+        </div>
 
         {/* Regular Lists Section */}
         <div>

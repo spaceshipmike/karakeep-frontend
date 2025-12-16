@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout";
-import { BookmarkGrid } from "@/components/bookmark";
+import { PaginatedBookmarkGrid } from "@/components/bookmark";
 import { getLists, searchBookmarks } from "@/lib/karakeep";
 import { SearchInput } from "./SearchInput";
 
@@ -73,14 +73,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const [lists, searchResult] = await Promise.all([
     getLists().catch(() => []),
     query
-      ? searchBookmarks(query, { limit: 30, sortOrder: "desc" }).catch(() => ({
+      ? searchBookmarks(query, { limit: 50, sortOrder: "desc" }).catch(() => ({
           bookmarks: [],
           nextCursor: null,
         }))
       : Promise.resolve({ bookmarks: [], nextCursor: null }),
   ]);
 
-  const bookmarks = searchResult.bookmarks;
+  const { bookmarks, nextCursor } = searchResult;
   const title = getSearchTitle(query);
   const description = getSearchDescription(query, bookmarks.length);
   const showSearchInput = !isSmartList(query);
@@ -102,9 +102,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         )}
       </header>
 
-      {/* Results grid */}
-      <BookmarkGrid
-        bookmarks={bookmarks}
+      {/* Results grid with pagination */}
+      <PaginatedBookmarkGrid
+        initialBookmarks={bookmarks}
+        initialCursor={nextCursor}
+        query={query}
         emptyTitle={query ? "No results" : "Start searching"}
         emptyMessage={
           query

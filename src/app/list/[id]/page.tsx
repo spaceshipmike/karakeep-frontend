@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout";
-import { BookmarkGrid } from "@/components/bookmark";
+import { PaginatedBookmarkGrid } from "@/components/bookmark";
 import { getLists, getBookmarksByList } from "@/lib/karakeep";
 import type { List } from "@/types";
 
@@ -37,7 +37,7 @@ export default async function ListPage({ params }: ListPageProps) {
   // Fetch lists and bookmarks in parallel
   const [lists, bookmarksResult] = await Promise.all([
     getLists().catch(() => []),
-    getBookmarksByList(id, { limit: 30, sortOrder: "desc" }).catch(() => ({
+    getBookmarksByList(id, { limit: 50, sortOrder: "desc" }).catch(() => ({
       bookmarks: [],
       nextCursor: null,
     })),
@@ -51,7 +51,7 @@ export default async function ListPage({ params }: ListPageProps) {
   }
 
   const parentList = findParentList(lists, currentList.parentId);
-  const bookmarks = bookmarksResult.bookmarks;
+  const { bookmarks, nextCursor } = bookmarksResult;
 
   return (
     <AppShell lists={lists}>
@@ -66,13 +66,15 @@ export default async function ListPage({ params }: ListPageProps) {
           {currentList.name}
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
-          {bookmarks.length} bookmark{bookmarks.length !== 1 ? "s" : ""} in this collection
+          {bookmarks.length}+ bookmark{bookmarks.length !== 1 ? "s" : ""} in this collection
         </p>
       </header>
 
-      {/* Bookmarks grid */}
-      <BookmarkGrid
-        bookmarks={bookmarks}
+      {/* Bookmarks grid with pagination */}
+      <PaginatedBookmarkGrid
+        initialBookmarks={bookmarks}
+        initialCursor={nextCursor}
+        listId={id}
         emptyTitle="No bookmarks"
         emptyMessage={`Add bookmarks to "${currentList.name}" to see them here.`}
       />

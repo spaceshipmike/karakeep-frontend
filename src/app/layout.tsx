@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { KeyboardNavigationProvider } from "@/components/KeyboardNavigationProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preconnect to Google Fonts for faster loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,9 +24,27 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
+        {/* Inline script to prevent flash of wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('karakeep-theme');
+                  var isDark = theme === 'dark' ||
+                    (theme === 'system' || !theme) &&
+                    window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (isDark) document.documentElement.classList.add('dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
       </head>
       <body className="antialiased">
-        {children}
+        <ThemeProvider>
+          <KeyboardNavigationProvider>{children}</KeyboardNavigationProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
