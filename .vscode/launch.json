@@ -1,0 +1,25 @@
+  {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Next.js: dev",
+        "type": "node-terminal",
+        "request": "launch",
+        "command": "npm run dev"
+      },
+      {
+        "name": "Open Browser",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder}"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Dev + Browser",
+        "configurations": ["Next.js: dev", "Open Browser"],
+        "stopAll": true
+      }
+    ]
+  }
