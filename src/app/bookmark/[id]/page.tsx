@@ -8,6 +8,7 @@ import {
   getBookmarkScreenshotUrl,
   getBookmarkTitle,
 } from "@/lib/karakeep";
+import { BookmarkDetailClient } from "@/components/bookmark/BookmarkDetailClient";
 
 interface BookmarkPageProps {
   params: Promise<{ id: string }>;
@@ -38,6 +39,9 @@ export default async function BookmarkPage({ params }: BookmarkPageProps) {
 
   return (
     <AppShell lists={lists}>
+      {/* Client-side interactive components */}
+      <BookmarkDetailClient bookmark={bookmark} />
+
       <article className="mx-auto max-w-4xl">
         {/* Back link */}
         <div className="mb-6">

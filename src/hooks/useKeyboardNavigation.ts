@@ -3,14 +3,33 @@
 import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
+export interface KeyboardShortcutHandlers {
+  onEdit?: () => void;
+  onFavorite?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
+  onToggleSelection?: () => void;
+  onSelectAll?: () => void;
+  onAddTags?: () => void;
+  onAddToList?: () => void;
+}
+
 /**
  * useKeyboardNavigation - Global keyboard shortcuts
  *
  * Provides app-wide keyboard navigation:
  * - / : Focus search input
  * - Escape : Clear focus / close modals
+ * - e : Edit current/selected bookmark(s)
+ * - f : Toggle favorite
+ * - a : Archive/unarchive
+ * - x : Toggle selection mode
+ * - Cmd/Ctrl+A : Select all (when in selection mode)
+ * - Delete/Backspace : Delete with confirmation
+ * - t : Add tags
+ * - l : Add to list
  */
-export function useKeyboardNavigation() {
+export function useKeyboardNavigation(handlers?: KeyboardShortcutHandlers) {
   const router = useRouter();
 
   const handleKeyDown = useCallback(
@@ -40,17 +59,85 @@ export function useKeyboardNavigation() {
         }
       }
 
+      // Edit operations (only when not in input)
+      if (!isInput && handlers) {
+        // e - Edit
+        if (e.key === "e" && handlers.onEdit) {
+          e.preventDefault();
+          handlers.onEdit();
+        }
+
+        // f - Toggle favorite
+        if (e.key === "f" && handlers.onFavorite) {
+          e.preventDefault();
+          handlers.onFavorite();
+        }
+
+        // a - Archive
+        if (e.key === "a" && handlers.onArchive) {
+          e.preventDefault();
+          handlers.onArchive();
+        }
+
+        // x - Toggle selection mode
+        if (e.key === "x" && handlers.onToggleSelection) {
+          e.preventDefault();
+          handlers.onToggleSelection();
+        }
+
+        // Cmd/Ctrl+A - Select all
+        if (
+          e.key === "a" &&
+          (e.metaKey || e.ctrlKey) &&
+          handlers.onSelectAll
+        ) {
+          e.preventDefault();
+          handlers.onSelectAll();
+        }
+
+        // Delete/Backspace - Delete
+        if (
+          (e.key === "Delete" || e.key === "Backspace") &&
+          handlers.onDelete &&
+          !e.metaKey &&
+          !e.ctrlKey
+        ) {
+          e.preventDefault();
+          handlers.onDelete();
+        }
+
+        // t - Add tags
+        if (e.key === "t" && handlers.onAddTags) {
+          e.preventDefault();
+          handlers.onAddTags();
+        }
+
+        // l - Add to list
+        if (e.key === "l" && handlers.onAddToList) {
+          e.preventDefault();
+          handlers.onAddToList();
+        }
+      }
+
       // ? to show keyboard shortcuts help (future feature)
       if (e.key === "?" && !isInput && e.shiftKey) {
         e.preventDefault();
-        // Could show a modal with keyboard shortcuts
-        console.log("Keyboard shortcuts: / = search, Escape = unfocus");
+        console.log(
+          "Keyboard shortcuts:\n" +
+          "/ = search\n" +
+          "e = edit\n" +
+          "f = favorite\n" +
+          "a = archive\n" +
+          "x = selection mode\n" +
+          "Cmd+A = select all\n" +
+          "Delete = delete\n" +
+          "t = add tags\n" +
+          "l = add to list\n" +
+          "Escape = close/unfocus"
+        );
       }
-
-      // g then h to go home (vim-style navigation)
-      // This would require state tracking for the "g" prefix
     },
-    [router]
+    [router, handlers]
   );
 
   useEffect(() => {
