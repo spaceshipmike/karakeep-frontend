@@ -49,7 +49,7 @@ export function BulkActionsToolbar({
           {onFavorite && (
             <button
               onClick={onFavorite}
-              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Toggle favorite"
             >
               <svg
@@ -72,7 +72,7 @@ export function BulkActionsToolbar({
           {onArchive && (
             <button
               onClick={onArchive}
-              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Archive"
             >
               <svg
@@ -95,7 +95,7 @@ export function BulkActionsToolbar({
           {onAddTags && (
             <button
               onClick={onAddTags}
-              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Add tags"
             >
               <svg
@@ -123,7 +123,7 @@ export function BulkActionsToolbar({
           {onAddToList && (
             <button
               onClick={onAddToList}
-              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="Add to list"
             >
               <svg
@@ -146,7 +146,7 @@ export function BulkActionsToolbar({
           {onDelete && (
             <button
               onClick={onDelete}
-              className="flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950"
+              className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-md px-3 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950"
               title="Delete"
             >
               <svg
