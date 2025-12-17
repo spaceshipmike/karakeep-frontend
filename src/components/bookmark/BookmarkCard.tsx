@@ -44,6 +44,7 @@ export function BookmarkCard({
   onEdit,
 }: BookmarkCardProps) {
   const [showActions, setShowActions] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const screenshotUrl = getBookmarkScreenshotUrl(bookmark);
   const title = getBookmarkTitle(bookmark);
   const url = bookmark.content?.url;
@@ -80,7 +81,7 @@ export function BookmarkCard({
       )}
       onClick={handleCardClick}
       onMouseEnter={() => !isSelectionMode && setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => !dialogOpen && setShowActions(false)}
     >
       {/* Screenshot Hero */}
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
@@ -158,13 +159,18 @@ export function BookmarkCard({
         )}
 
         {/* QuickActions (bottom right, appears on hover in normal mode) */}
-        {!isSelectionMode && showActions && (
-          <div className="absolute bottom-3 right-3 z-20 animate-in fade-in-0 zoom-in-95 duration-200">
+        {/* Keep mounted when dialog is open to prevent interrupting async operations */}
+        {!isSelectionMode && (showActions || dialogOpen) && (
+          <div className={cn(
+            "absolute bottom-3 right-3 z-20 animate-in fade-in-0 zoom-in-95 duration-200",
+            dialogOpen && !showActions && "opacity-0 pointer-events-none"
+          )}>
             <QuickActions
               bookmark={bookmark}
               onUpdate={onUpdate}
               onDelete={onDelete}
               onEdit={onEdit}
+              onDialogOpenChange={setDialogOpen}
             />
           </div>
         )}

@@ -13,6 +13,8 @@ interface QuickActionsProps {
   onDelete?: (id: string) => void;
   onEdit?: () => void;
   className?: string;
+  /** Callback when dialog open state changes (prevents parent from unmounting during dialogs) */
+  onDialogOpenChange?: (isOpen: boolean) => void;
 }
 
 /**
@@ -27,10 +29,17 @@ export function QuickActions({
   onDelete,
   onEdit,
   className,
+  onDialogOpenChange,
 }: QuickActionsProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const toast = useToast();
   const mutation = useBookmarkMutation(bookmark, onUpdate);
+
+  // Notify parent when dialog state changes
+  const handleDialogOpen = (isOpen: boolean) => {
+    setShowDeleteConfirm(isOpen);
+    onDialogOpenChange?.(isOpen);
+  };
 
   const handleToggleFavorite = async () => {
     const result = await mutation.toggleFavorite();
@@ -158,7 +167,7 @@ export function QuickActions({
 
         {/* Delete */}
         <button
-          onClick={() => setShowDeleteConfirm(true)}
+          onClick={() => handleDialogOpen(true)}
           disabled={mutation.isLoading}
           className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950"
           title="Delete bookmark"
@@ -182,7 +191,7 @@ export function QuickActions({
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
+        onClose={() => handleDialogOpen(false)}
         onConfirm={handleDelete}
         title="Delete bookmark?"
         message="This action cannot be undone. The bookmark will be permanently deleted."
