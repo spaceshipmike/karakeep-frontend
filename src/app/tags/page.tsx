@@ -103,9 +103,14 @@ export default async function TagsPage() {
 
           {/* Tag list for detailed view */}
           <div className="border-t border-border pt-8">
-            <h2 className="mb-4 font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
-              All Tags
-            </h2>
+            <div className="mb-6">
+              <h2 className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
+                All Tags
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Browse tags by source. <span className="font-medium">AI</span> indicates auto-tagged, <span className="font-medium">Manual</span> indicates manually added.
+              </p>
+            </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {tags.map((tag) => (
                 <Link
@@ -116,18 +121,26 @@ export default async function TagsPage() {
                   <span className="text-sm text-card-foreground group-hover:text-primary">
                     {tag.name}
                   </span>
-                  <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
                     {tag.aiCount > 0 && (
-                      <span title="AI-tagged" className="text-muted-foreground/60">
-                        AI:{tag.aiCount}
+                      <span title="AI-tagged bookmarks" className="text-muted-foreground/60">
+                        AI: {tag.aiCount}
                       </span>
+                    )}
+                    {tag.aiCount > 0 && tag.humanCount > 0 && (
+                      <span className="text-muted-foreground/40">·</span>
                     )}
                     {tag.humanCount > 0 && (
-                      <span title="Manually tagged" className="text-muted-foreground/60">
-                        {tag.humanCount}
+                      <span title="Manually tagged bookmarks" className="text-muted-foreground/60">
+                        Manual: {tag.humanCount}
                       </span>
                     )}
-                    <span className="text-muted-foreground">{tag.count}</span>
+                    {(tag.aiCount > 0 || tag.humanCount > 0) && (
+                      <span className="text-muted-foreground/40">·</span>
+                    )}
+                    <span className="font-medium text-muted-foreground" title="Total bookmarks">
+                      {tag.count}
+                    </span>
                   </div>
                 </Link>
               ))}

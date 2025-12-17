@@ -8,7 +8,14 @@ import { TagFilter, filterBookmarksByTags } from "./TagFilter";
 import { ViewToggle, type ViewMode } from "./ViewToggle";
 import { SourceFilter, filterBookmarksBySources } from "./SourceFilter";
 import { SortSelect, sortBookmarks, type SortOption } from "./SortSelect";
+import { BulkActionsToolbar } from "./BulkActionsToolbar";
+import { BulkTagModal } from "./BulkTagModal";
+import { BulkListModal } from "./BulkListModal";
+import { BulkProgressModal } from "./BulkProgressModal";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { useBookmarkSelection } from "@/hooks/useBookmarkSelection";
+import { useBulkOperation } from "@/hooks/useBulkOperation";
+import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
 
 interface PaginatedBookmarkGridProps {
@@ -59,6 +66,14 @@ export function PaginatedBookmarkGrid({
 
   // Selection state
   const selection = useBookmarkSelection();
+
+  // Bulk operations
+  const bulkOp = useBulkOperation();
+  const toast = useToast();
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentOperation, setCurrentOperation] = useState<string>("Processing bookmarks");
 
   // Filter and sort bookmarks
   const filteredBookmarks = useMemo(() => {
@@ -251,6 +266,87 @@ export function PaginatedBookmarkGrid({
     }
   };
 
+  // Bulk operation handlers
+  const handleBulkFavorite = async () => {
+    setCurrentOperation("Adding to favorites");
+    const result = await bulkOp.updateBookmarks(selection.selectedIds, {
+      favourited: true,
+    });
+    if (result.succeeded.length > 0) {
+      toast.success(
+        `Added ${result.succeeded.length} bookmark${result.succeeded.length !== 1 ? "s" : ""} to favorites`
+      );
+      // Refresh bookmarks (optimistic update could work but requires fetching from server)
+      selection.clearSelection();
+    }
+    if (result.failed.length > 0) {
+      toast.error(`Failed to update ${result.failed.length} bookmarks`);
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    setCurrentOperation("Archiving bookmarks");
+    const result = await bulkOp.updateBookmarks(selection.selectedIds, {
+      archived: true,
+    });
+    if (result.succeeded.length > 0) {
+      toast.success(
+        `Archived ${result.succeeded.length} bookmark${result.succeeded.length !== 1 ? "s" : ""}`
+      );
+      selection.clearSelection();
+    }
+    if (result.failed.length > 0) {
+      toast.error(`Failed to archive ${result.failed.length} bookmarks`);
+    }
+  };
+
+  const handleBulkAddTags = async (tags: string[]) => {
+    setCurrentOperation("Adding tags");
+    const result = await bulkOp.attachTags(selection.selectedIds, tags);
+    if (result.succeeded.length > 0) {
+      toast.success(
+        `Added tags to ${result.succeeded.length} bookmark${result.succeeded.length !== 1 ? "s" : ""}`
+      );
+      selection.clearSelection();
+    }
+    if (result.failed.length > 0) {
+      toast.error(`Failed to tag ${result.failed.length} bookmarks`);
+    }
+  };
+
+  const handleBulkAddToList = async (listId: string) => {
+    setCurrentOperation("Adding to list");
+    const result = await bulkOp.addToList(selection.selectedIds, listId);
+    if (result.succeeded.length > 0) {
+      toast.success(
+        `Added ${result.succeeded.length} bookmark${result.succeeded.length !== 1 ? "s" : ""} to list`
+      );
+      selection.clearSelection();
+    }
+    if (result.failed.length > 0) {
+      toast.error(`Failed to add ${result.failed.length} bookmarks to list`);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setCurrentOperation("Deleting bookmarks");
+    const result = await bulkOp.deleteBookmarks(selection.selectedIds);
+    if (result.succeeded.length > 0) {
+      toast.success(
+        `Deleted ${result.succeeded.length} bookmark${result.succeeded.length !== 1 ? "s" : ""}`
+      );
+      // Remove deleted bookmarks from local state
+      setBookmarks((prev) =>
+        prev.filter((b) => !result.succeeded.includes(b.id))
+      );
+      selection.clearSelection();
+    }
+    if (result.failed.length > 0) {
+      toast.error(`Failed to delete ${result.failed.length} bookmarks`);
+    }
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <div>
       {toolbar}
@@ -285,6 +381,56 @@ export function PaginatedBookmarkGrid({
           />
         </>
       )}
+
+      {/* Bulk Actions Toolbar */}
+      {selection.isSelectionMode && selection.selectedCount > 0 && (
+        <BulkActionsToolbar
+          selectedCount={selection.selectedCount}
+          onFavorite={handleBulkFavorite}
+          onArchive={handleBulkArchive}
+          onAddTags={() => setShowTagModal(true)}
+          onAddToList={() => setShowListModal(true)}
+          onDelete={() => setShowDeleteConfirm(true)}
+          onCancel={selection.clearSelection}
+        />
+      )}
+
+      {/* Bulk Tag Modal */}
+      <BulkTagModal
+        isOpen={showTagModal}
+        mode="add"
+        selectedCount={selection.selectedCount}
+        onConfirm={handleBulkAddTags}
+        onClose={() => setShowTagModal(false)}
+      />
+
+      {/* Bulk List Modal */}
+      <BulkListModal
+        isOpen={showListModal}
+        selectedCount={selection.selectedCount}
+        onConfirm={handleBulkAddToList}
+        onClose={() => setShowListModal(false)}
+      />
+
+      {/* Bulk Progress Modal */}
+      <BulkProgressModal
+        isOpen={bulkOp.isRunning}
+        operation={currentOperation}
+        progress={bulkOp}
+        onClose={bulkOp.reset}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleBulkDelete}
+        title="Delete bookmarks?"
+        message={`Are you sure you want to delete ${selection.selectedCount} bookmark${selection.selectedCount !== 1 ? "s" : ""}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

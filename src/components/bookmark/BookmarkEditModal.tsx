@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Bookmark } from "@/types";
+import type { Bookmark, List } from "@/types";
 import { useBookmarkMutation } from "@/hooks/useBookmarkMutation";
 import { useToast } from "@/components/ui/ToastProvider";
+import { getLists } from "@/lib/karakeep";
 import { cn } from "@/lib/utils";
 
 interface BookmarkEditModalProps {
@@ -27,6 +28,9 @@ export function BookmarkEditModal({
 }: BookmarkEditModalProps) {
   const [title, setTitle] = useState(bookmark.title || "");
   const [note, setNote] = useState(bookmark.note || "");
+  const [tagInput, setTagInput] = useState("");
+  const [lists, setLists] = useState<List[]>([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(false);
   const toast = useToast();
   const mutation = useBookmarkMutation(bookmark, onUpdate);
 
@@ -35,6 +39,20 @@ export function BookmarkEditModal({
     setTitle(bookmark.title || "");
     setNote(bookmark.note || "");
   }, [bookmark.id, bookmark.title, bookmark.note]);
+
+  // Load lists when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingLists(true);
+      getLists()
+        .then(setLists)
+        .catch((err) => {
+          console.error("Failed to load lists:", err);
+          toast.error("Failed to load lists");
+        })
+        .finally(() => setIsLoadingLists(false));
+    }
+  }, [isOpen, toast]);
 
   if (!isOpen) return null;
 
@@ -80,6 +98,56 @@ export function BookmarkEditModal({
       handleSave();
     }
   };
+
+  // Tag management handlers
+  const handleAddTags = async () => {
+    const tags = tagInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    if (tags.length === 0) return;
+
+    const result = await mutation.attachTags(tags);
+    if (result) {
+      toast.success(`Added ${tags.length} tag${tags.length !== 1 ? "s" : ""}`);
+      setTagInput("");
+    } else if (mutation.error) {
+      toast.error(mutation.error);
+    }
+  };
+
+  const handleRemoveTag = async (tagName: string) => {
+    const result = await mutation.detachTags([tagName]);
+    if (result) {
+      toast.success("Tag removed");
+    } else if (mutation.error) {
+      toast.error(mutation.error);
+    }
+  };
+
+  // List management handler
+  const handleToggleList = async (listId: string, isInList: boolean) => {
+    if (isInList) {
+      const result = await mutation.removeFromList(listId);
+      if (result) {
+        toast.success("Removed from list");
+      } else if (mutation.error) {
+        toast.error(mutation.error);
+      }
+    } else {
+      const result = await mutation.addToList(listId);
+      if (result) {
+        toast.success("Added to list");
+      } else if (mutation.error) {
+        toast.error(mutation.error);
+      }
+    }
+  };
+
+  // Note: We don't have list membership info on the bookmark, so we'll show all lists
+  // In a real implementation, you'd fetch which lists this bookmark belongs to
+  const manualLists = lists.filter((list) => !list.query);
 
   return (
     <div
@@ -188,6 +256,162 @@ export function BookmarkEditModal({
               </div>
             </div>
           )}
+
+          {/* Tags Management */}
+          <div>
+            <label className="block text-sm font-medium text-card-foreground">
+              Tags
+            </label>
+
+            {/* Current tags */}
+            {bookmark.tags && bookmark.tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {bookmark.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                      tag.attachedBy === "human"
+                        ? "bg-primary/10 text-primary hover:bg-primary/15"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {tag.attachedBy === "ai" && (
+                      <svg
+                        className="h-3 w-3 opacity-50"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                        />
+                      </svg>
+                    )}
+                    {tag.name}
+                    <button
+                      onClick={() => handleRemoveTag(tag.name)}
+                      disabled={mutation.isLoading}
+                      className="ml-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                      aria-label={`Remove ${tag.name} tag`}
+                    >
+                      <svg
+                        className="h-3 w-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Add tags input */}
+            <div className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddTags();
+                  }
+                }}
+                placeholder="Add tags (comma-separated)..."
+                className="flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <button
+                onClick={handleAddTags}
+                disabled={!tagInput.trim() || mutation.isLoading}
+                className={cn(
+                  "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                  !tagInput.trim() || mutation.isLoading
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                )}
+              >
+                Add
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Example: development, javascript, tutorial
+            </p>
+          </div>
+
+          {/* Lists Management */}
+          <div>
+            <label className="block text-sm font-medium text-card-foreground">
+              Lists
+            </label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add this bookmark to collections
+            </p>
+
+            {isLoadingLists ? (
+              <div className="mt-3 flex items-center justify-center py-4">
+                <svg
+                  className="h-5 w-5 animate-spin text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              </div>
+            ) : manualLists.length > 0 ? (
+              <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
+                {manualLists.map((list) => {
+                  // Note: We don't have membership info, so all lists are shown as unchecked
+                  // In production, you'd fetch membership data
+                  const isInList = false;
+
+                  return (
+                    <label
+                      key={list.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isInList}
+                        onChange={() => handleToggleList(list.id, isInList)}
+                        disabled={mutation.isLoading}
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <span className="mr-1">{list.icon}</span>
+                      <span className="flex-1">{list.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                No lists available
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
