@@ -245,7 +245,7 @@ export function EditListModal({
                 {showIconPicker && (
                   <div className="absolute left-0 top-full z-10 mt-1 w-72 rounded-md border border-border bg-card p-3 shadow-lg">
                     <p className="mb-2 text-xs font-medium text-muted-foreground">Choose an icon</p>
-                    <div className="grid grid-cols-5 gap-1">
+                    <div className="grid grid-cols-5 gap-1 max-h-[280px] overflow-y-auto">
                       {ICON_OPTIONS.map((iconName) => (
                         <button
                           key={iconName}
