@@ -393,27 +393,29 @@ export function BookmarkEditModal({
                 </svg>
               </div>
             ) : manualLists.length > 0 ? (
-              <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
-                {manualLists.map((list) => {
-                  const isInList = memberListIds.has(list.id);
+              <div className="mt-3 max-h-48 overflow-y-auto rounded-md border border-border bg-background p-3">
+                <div className="grid grid-cols-2 gap-1">
+                  {manualLists.map((list) => {
+                    const isInList = memberListIds.has(list.id);
 
-                  return (
-                    <label
-                      key={list.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isInList}
-                        onChange={() => handleToggleList(list.id, isInList)}
-                        disabled={mutation.isLoading}
-                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                      />
-                      <span className="mr-1">{list.icon}</span>
-                      <span className="flex-1">{list.name}</span>
-                    </label>
-                  );
-                })}
+                    return (
+                      <label
+                        key={list.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isInList}
+                          onChange={() => handleToggleList(list.id, isInList)}
+                          disabled={mutation.isLoading}
+                          className="h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <span className="shrink-0">{list.icon}</span>
+                        <span className="truncate">{list.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <p className="mt-3 text-sm text-muted-foreground">

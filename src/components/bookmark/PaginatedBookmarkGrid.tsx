@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { Bookmark } from "@/types";
 import { BookmarkCard, BookmarkCardCompact } from "./BookmarkCard";
+import { BookmarkEditModal } from "./BookmarkEditModal";
 import { LoadMoreButton } from "./LoadMoreButton";
 import { TagFilter, filterBookmarksByTags } from "./TagFilter";
 import { ViewToggle, type ViewMode } from "./ViewToggle";
@@ -82,6 +83,9 @@ export function PaginatedBookmarkGrid({
   const [showListModal, setShowListModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentOperation, setCurrentOperation] = useState<string>("Processing bookmarks");
+
+  // Edit modal state
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
 
   // Filter and sort bookmarks
   const filteredBookmarks = useMemo(() => {
@@ -363,7 +367,11 @@ export function PaginatedBookmarkGrid({
           {isCompact ? (
             <div className="flex flex-col gap-3">
               {filteredBookmarks.map((bookmark) => (
-                <BookmarkCardCompact key={bookmark.id} bookmark={bookmark} />
+                <BookmarkCardCompact
+                  key={bookmark.id}
+                  bookmark={bookmark}
+                  onEdit={() => setEditingBookmark(bookmark)}
+                />
               ))}
             </div>
           ) : (
@@ -377,6 +385,7 @@ export function PaginatedBookmarkGrid({
                   onToggleSelection={() => selection.toggleSelection(bookmark.id)}
                   onUpdate={handleBookmarkUpdate}
                   onDelete={handleBookmarkDelete}
+                  onEdit={() => setEditingBookmark(bookmark)}
                 />
               ))}
             </div>
@@ -439,6 +448,19 @@ export function PaginatedBookmarkGrid({
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Edit Modal */}
+      {editingBookmark && (
+        <BookmarkEditModal
+          isOpen={!!editingBookmark}
+          bookmark={editingBookmark}
+          onClose={() => setEditingBookmark(null)}
+          onUpdate={(updated) => {
+            handleBookmarkUpdate(updated);
+            setEditingBookmark(null);
+          }}
+        />
+      )}
     </div>
   );
 }
