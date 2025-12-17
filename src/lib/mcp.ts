@@ -111,17 +111,16 @@ async function detachTags(bookmarkId: string, tags: string[]): Promise<void> {
 
 /**
  * Add bookmark to a list via Karakeep API
+ * Uses PUT /lists/:listId/bookmarks/:bookmarkId (no body)
  */
 async function addToList(bookmarkId: string, listId: string): Promise<void> {
   const response = await fetch(
-    `${API_URL}/api/v1/lists/${listId}/bookmarks`,
+    `${API_URL}/api/v1/lists/${listId}/bookmarks/${bookmarkId}`,
     {
-      method: "POST",
+      method: "PUT",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${API_KEY}`,
       },
-      body: JSON.stringify({ bookmarkId }),
     }
   );
 
