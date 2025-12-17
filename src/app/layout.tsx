@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { KeyboardNavigationProvider } from "@/components/KeyboardNavigationProvider";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -43,7 +44,9 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ThemeProvider>
-          <KeyboardNavigationProvider>{children}</KeyboardNavigationProvider>
+          <ToastProvider>
+            <KeyboardNavigationProvider>{children}</KeyboardNavigationProvider>
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
