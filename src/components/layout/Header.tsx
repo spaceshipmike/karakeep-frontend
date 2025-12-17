@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Icon } from "./Sidebar";
+import { Icon } from "@/components/ui/Icons";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface HeaderProps {

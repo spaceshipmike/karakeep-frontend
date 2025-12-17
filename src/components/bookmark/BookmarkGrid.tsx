@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { Bookmark } from "@/types";
 import { BookmarkCard, BookmarkCardCompact } from "./BookmarkCard";
+import { BookmarkEditModal } from "./BookmarkEditModal";
 
 interface BookmarkGridProps {
   bookmarks: Bookmark[];
@@ -19,12 +23,27 @@ interface BookmarkGridProps {
  * Supports both standard and compact card variants.
  */
 export function BookmarkGrid({
-  bookmarks,
+  bookmarks: initialBookmarks,
   compact = false,
   columns = 3,
   emptyTitle = "No bookmarks",
   emptyMessage = "Bookmarks matching your criteria will appear here.",
 }: BookmarkGridProps) {
+  const [bookmarks, setBookmarks] = useState(initialBookmarks);
+  const [editingBookmark, setEditingBookmark] = useState<Bookmark | null>(null);
+
+  // Handle bookmark update (optimistic UI)
+  const handleBookmarkUpdate = (updated: Bookmark) => {
+    setBookmarks((prev) =>
+      prev.map((b) => (b.id === updated.id ? updated : b))
+    );
+  };
+
+  // Handle bookmark delete
+  const handleBookmarkDelete = (id: string) => {
+    setBookmarks((prev) => prev.filter((b) => b.id !== id));
+  };
+
   if (bookmarks.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-card p-12 text-center">
@@ -39,11 +58,32 @@ export function BookmarkGrid({
   // Compact layout uses a single column list
   if (compact) {
     return (
-      <div className="flex flex-col gap-3">
-        {bookmarks.map((bookmark) => (
-          <BookmarkCardCompact key={bookmark.id} bookmark={bookmark} />
-        ))}
-      </div>
+      <>
+        <div className="flex flex-col gap-3">
+          {bookmarks.map((bookmark) => (
+            <BookmarkCardCompact
+              key={bookmark.id}
+              bookmark={bookmark}
+              onEdit={() => setEditingBookmark(bookmark)}
+            />
+          ))}
+        </div>
+        {editingBookmark && (
+          <BookmarkEditModal
+            isOpen={!!editingBookmark}
+            bookmark={editingBookmark}
+            onClose={() => setEditingBookmark(null)}
+            onUpdate={(updated) => {
+              handleBookmarkUpdate(updated);
+              setEditingBookmark(null);
+            }}
+            onDelete={(id) => {
+              handleBookmarkDelete(id);
+              setEditingBookmark(null);
+            }}
+          />
+        )}
+      </>
     );
   }
 
@@ -55,10 +95,33 @@ export function BookmarkGrid({
   };
 
   return (
-    <div className={`grid gap-6 ${columnClasses[columns]}`}>
-      {bookmarks.map((bookmark) => (
-        <BookmarkCard key={bookmark.id} bookmark={bookmark} />
-      ))}
-    </div>
+    <>
+      <div className={`grid gap-6 ${columnClasses[columns]}`}>
+        {bookmarks.map((bookmark) => (
+          <BookmarkCard
+            key={bookmark.id}
+            bookmark={bookmark}
+            onUpdate={handleBookmarkUpdate}
+            onDelete={handleBookmarkDelete}
+            onEdit={() => setEditingBookmark(bookmark)}
+          />
+        ))}
+      </div>
+      {editingBookmark && (
+        <BookmarkEditModal
+          isOpen={!!editingBookmark}
+          bookmark={editingBookmark}
+          onClose={() => setEditingBookmark(null)}
+          onUpdate={(updated) => {
+            handleBookmarkUpdate(updated);
+            setEditingBookmark(null);
+          }}
+          onDelete={(id) => {
+            handleBookmarkDelete(id);
+            setEditingBookmark(null);
+          }}
+        />
+      )}
+    </>
   );
 }

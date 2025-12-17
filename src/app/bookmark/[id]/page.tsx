@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout";
 import {
   getLists,
   getBookmark,
+  getBookmarkLists,
   getBookmarkScreenshotUrl,
   getBookmarkTitle,
 } from "@/lib/karakeep";
@@ -17,9 +18,10 @@ interface BookmarkPageProps {
 export default async function BookmarkPage({ params }: BookmarkPageProps) {
   const { id } = await params;
 
-  const [lists, bookmark] = await Promise.all([
+  const [lists, bookmark, bookmarkLists] = await Promise.all([
     getLists().catch(() => []),
     getBookmark(id, true).catch(() => null),
+    getBookmarkLists(id).catch(() => ({ lists: [] })),
   ]);
 
   if (!bookmark) {
@@ -136,6 +138,27 @@ export default async function BookmarkPage({ params }: BookmarkPageProps) {
                   {tag.attachedBy === "ai" && (
                     <span className="text-[9px] text-muted-foreground/50">AI</span>
                   )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lists */}
+        {bookmarkLists.lists.length > 0 && (
+          <div className="mb-8">
+            <h2 className="mb-3 font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
+              Lists
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {bookmarkLists.lists.map((list) => (
+                <Link
+                  key={list.id}
+                  href={`/list/${list.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                >
+                  {list.icon && <span>{list.icon}</span>}
+                  <span>{list.name}</span>
                 </Link>
               ))}
             </div>

@@ -121,24 +121,28 @@ export default async function TagsPage() {
                   <span className="text-sm text-card-foreground group-hover:text-primary">
                     {tag.name}
                   </span>
-                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
-                    {tag.aiCount > 0 && (
-                      <span title="AI-tagged bookmarks" className="text-muted-foreground/60">
-                        AI: {tag.aiCount}
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    {/* Show breakdown only if mixed AI + human */}
+                    {tag.aiCount > 0 && tag.humanCount > 0 ? (
+                      <>
+                        <span title="AI-tagged" className="text-muted-foreground/60">
+                          {tag.aiCount} AI
+                        </span>
+                        <span className="text-muted-foreground/40">·</span>
+                        <span title="Manually tagged" className="text-muted-foreground/60">
+                          {tag.humanCount} manual
+                        </span>
+                      </>
+                    ) : tag.aiCount > 0 ? (
+                      <span title="All AI-tagged" className="text-muted-foreground/60">
+                        AI
                       </span>
-                    )}
-                    {tag.aiCount > 0 && tag.humanCount > 0 && (
-                      <span className="text-muted-foreground/40">·</span>
-                    )}
-                    {tag.humanCount > 0 && (
-                      <span title="Manually tagged bookmarks" className="text-muted-foreground/60">
-                        Manual: {tag.humanCount}
+                    ) : tag.humanCount > 0 ? (
+                      <span title="All manually tagged" className="text-muted-foreground/60">
+                        manual
                       </span>
-                    )}
-                    {(tag.aiCount > 0 || tag.humanCount > 0) && (
-                      <span className="text-muted-foreground/40">·</span>
-                    )}
-                    <span className="font-medium text-muted-foreground" title="Total bookmarks">
+                    ) : null}
+                    <span className="font-mono font-medium text-muted-foreground" title="Total bookmarks">
                       {tag.count}
                     </span>
                   </div>

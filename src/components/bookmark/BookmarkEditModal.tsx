@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import type { Bookmark, List } from "@/types";
 import { useBookmarkMutation } from "@/hooks/useBookmarkMutation";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -36,6 +36,10 @@ export function BookmarkEditModal({
   const [memberListIds, setMemberListIds] = useState<Set<string>>(new Set());
   const [isLoadingLists, setIsLoadingLists] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [listSearch, setListSearch] = useState("");
+  const [listSearchIndex, setListSearchIndex] = useState(0);
+  const [showListDropdown, setShowListDropdown] = useState(false);
+  const listSearchRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const mutation = useBookmarkMutation(bookmark, onUpdate);
 
@@ -68,6 +72,55 @@ export function BookmarkEditModal({
 
   // Filter to manual lists only (exclude smart lists with queries)
   const manualLists = lists.filter((list) => !list.query);
+
+  // Get current member lists for chip display
+  const memberLists = useMemo(
+    () => manualLists.filter((list) => memberListIds.has(list.id)),
+    [manualLists, memberListIds]
+  );
+
+  // Filter lists for predictive search dropdown
+  const filteredLists = useMemo(() => {
+    if (!listSearch.trim()) return [];
+    const search = listSearch.toLowerCase();
+    return manualLists
+      .filter(
+        (list) =>
+          !memberListIds.has(list.id) && // Exclude already-added lists
+          list.name.toLowerCase().includes(search)
+      )
+      .slice(0, 8); // Limit results
+  }, [manualLists, memberListIds, listSearch]);
+
+  // Handle list search keyboard navigation
+  const handleListSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setListSearchIndex((prev) =>
+        prev < filteredLists.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setListSearchIndex((prev) => (prev > 0 ? prev - 1 : 0));
+    } else if (e.key === "Enter" && filteredLists.length > 0) {
+      e.preventDefault();
+      const selectedList = filteredLists[listSearchIndex];
+      if (selectedList) {
+        handleToggleList(selectedList.id, false);
+        setListSearch("");
+        setShowListDropdown(false);
+        setListSearchIndex(0);
+      }
+    } else if (e.key === "Escape") {
+      setShowListDropdown(false);
+      setListSearch("");
+    }
+  };
+
+  // Reset search index when filtered results change
+  useEffect(() => {
+    setListSearchIndex(0);
+  }, [filteredLists.length]);
 
   if (!isOpen) return null;
 
@@ -107,28 +160,10 @@ export function BookmarkEditModal({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Don't handle shortcuts when typing in inputs
-    const target = e.target as HTMLElement;
-    const isInput =
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.isContentEditable;
-
     if (e.key === "Escape") {
       onClose();
     } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       handleSave();
-    } else if (!isInput && !mutation.isLoading) {
-      // Number keys 1-9 for quick list assignment
-      const num = parseInt(e.key, 10);
-      if (num >= 1 && num <= 9) {
-        const targetList = manualLists[num - 1];
-        if (targetList) {
-          e.preventDefault();
-          const isInList = memberListIds.has(targetList.id);
-          handleToggleList(targetList.id, isInList);
-        }
-      }
     }
   };
 
@@ -391,7 +426,7 @@ export function BookmarkEditModal({
               Lists
             </label>
             <p className="mt-1 text-xs text-muted-foreground">
-              Add this bookmark to collections
+              Type to search and add collections
             </p>
 
             {isLoadingLists ? (
@@ -416,41 +451,109 @@ export function BookmarkEditModal({
                   />
                 </svg>
               </div>
-            ) : manualLists.length > 0 ? (
-              <div className="mt-3 max-h-48 overflow-y-auto rounded-md border border-border bg-background p-3">
-                <div className="grid grid-cols-2 gap-1">
-                  {manualLists.map((list, index) => {
-                    const isInList = memberListIds.has(list.id);
-                    const shortcutKey = index < 9 ? index + 1 : null;
-
-                    return (
-                      <label
-                        key={list.id}
-                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isInList}
-                          onChange={() => handleToggleList(list.id, isInList)}
-                          disabled={mutation.isLoading}
-                          className="h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary"
-                        />
-                        {shortcutKey && (
-                          <kbd className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                            {shortcutKey}
-                          </kbd>
-                        )}
-                        <span className="shrink-0">{list.icon}</span>
-                        <span className="truncate">{list.name}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
             ) : (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No lists available
-              </p>
+              <div className="mt-3 space-y-3">
+                {/* Current list memberships as removable chips */}
+                {memberLists.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {memberLists.map((list) => (
+                      <span
+                        key={list.id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                      >
+                        <span>{list.icon}</span>
+                        {list.name}
+                        <button
+                          onClick={() => handleToggleList(list.id, true)}
+                          disabled={mutation.isLoading}
+                          className="ml-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                          aria-label={`Remove from ${list.name}`}
+                        >
+                          <svg
+                            className="h-3 w-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Predictive search input */}
+                <div className="relative">
+                  <input
+                    ref={listSearchRef}
+                    type="text"
+                    value={listSearch}
+                    onChange={(e) => {
+                      setListSearch(e.target.value);
+                      setShowListDropdown(e.target.value.trim().length > 0);
+                    }}
+                    onFocus={() => {
+                      if (listSearch.trim()) setShowListDropdown(true);
+                    }}
+                    onBlur={() => {
+                      // Delay to allow click on dropdown items
+                      setTimeout(() => setShowListDropdown(false), 150);
+                    }}
+                    onKeyDown={handleListSearchKeyDown}
+                    placeholder="Type to add to a list..."
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+
+                  {/* Dropdown results */}
+                  {showListDropdown && filteredLists.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+                      {filteredLists.map((list, index) => (
+                        <button
+                          key={list.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault(); // Prevent input blur
+                            handleToggleList(list.id, false);
+                            setListSearch("");
+                            setShowListDropdown(false);
+                          }}
+                          className={cn(
+                            "flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors",
+                            index === listSearchIndex
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <span>{list.icon}</span>
+                          <span>{list.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No results message */}
+                  {showListDropdown &&
+                    listSearch.trim() &&
+                    filteredLists.length === 0 && (
+                      <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-lg">
+                        No matching lists found
+                      </div>
+                    )}
+                </div>
+
+                {/* Empty state */}
+                {memberLists.length === 0 && !listSearch && (
+                  <p className="text-sm text-muted-foreground">
+                    Not in any lists yet
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>

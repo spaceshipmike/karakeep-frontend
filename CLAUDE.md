@@ -42,7 +42,7 @@ npm run lint         # Run ESLint
 - **Filters:** TagFilter, SourceFilter, SortSelect
 
 ## Data Source: Karakeep API
-
+Use this link for API research: https://deepwiki.com/karakeep-app/karakeep
 ### Environment Variables
 ```env
 KARAKEEP_API_URL=http://localhost:3000
