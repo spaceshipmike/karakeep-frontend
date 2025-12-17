@@ -1,8 +1,6 @@
 # KarakeepFE
 
-A beautiful, editorial-style frontend for [Karakeep](https://github.com/karakeep-app/karakeep) bookmark manager. Built for personal use with a magazine-inspired aesthetic.
-
-![Home Page](docs/screenshots/home.png)
+A beautiful, editorial-style frontend for [Karakeep](https://github.com/karakeep-app/karakeep) bookmark manager. Built for personal use with a clean aesthetic.
 
 ## Features
 
@@ -17,7 +15,7 @@ A beautiful, editorial-style frontend for [Karakeep](https://github.com/karakeep
 ## Screenshots
 
 <details>
-<summary>View more screenshots</summary>
+<summary>View screenshots</summary>
 
 ### Bookmark Detail
 ![Bookmark Detail](docs/screenshots/detail.png)
