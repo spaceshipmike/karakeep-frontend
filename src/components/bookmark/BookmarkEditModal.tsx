@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { Bookmark, List } from "@/types";
 import { useBookmarkMutation } from "@/hooks/useBookmarkMutation";
 import { useToast } from "@/components/ui/ToastProvider";
-import { getLists } from "@/lib/karakeep";
+import { getListsClient } from "@/lib/karakeep";
 import { cn } from "@/lib/utils";
 
 interface BookmarkEditModalProps {
@@ -44,7 +44,7 @@ export function BookmarkEditModal({
   useEffect(() => {
     if (isOpen) {
       setIsLoadingLists(true);
-      getLists()
+      getListsClient()
         .then(setLists)
         .catch((err) => {
           console.error("Failed to load lists:", err);

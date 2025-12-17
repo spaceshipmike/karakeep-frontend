@@ -3,8 +3,8 @@
 import { useState, useCallback } from "react";
 import type { Bookmark } from "@/types";
 import {
-  updateBookmark,
-  deleteBookmark,
+  updateBookmarkClient,
+  deleteBookmarkClient,
   addTagsToBookmark,
   removeTagsFromBookmark,
   addBookmarkToList,
@@ -63,7 +63,7 @@ export function useBookmarkMutation(
     async (title: string) => {
       return executeWithOptimism(
         (b) => ({ ...b, title }),
-        () => updateBookmark(bookmark.id, { title })
+        () => updateBookmarkClient(bookmark.id, { title })
       );
     },
     [bookmark.id, executeWithOptimism]
@@ -73,7 +73,7 @@ export function useBookmarkMutation(
     async (note: string) => {
       return executeWithOptimism(
         (b) => ({ ...b, note }),
-        () => updateBookmark(bookmark.id, { note })
+        () => updateBookmarkClient(bookmark.id, { note })
       );
     },
     [bookmark.id, executeWithOptimism]
@@ -82,21 +82,21 @@ export function useBookmarkMutation(
   const toggleFavorite = useCallback(async () => {
     return executeWithOptimism(
       (b) => ({ ...b, favourited: !b.favourited }),
-      () => updateBookmark(bookmark.id, { favourited: !bookmark.favourited })
+      () => updateBookmarkClient(bookmark.id, { favourited: !bookmark.favourited })
     );
   }, [bookmark.id, bookmark.favourited, executeWithOptimism]);
 
   const toggleArchive = useCallback(async () => {
     return executeWithOptimism(
       (b) => ({ ...b, archived: !b.archived }),
-      () => updateBookmark(bookmark.id, { archived: !bookmark.archived })
+      () => updateBookmarkClient(bookmark.id, { archived: !bookmark.archived })
     );
   }, [bookmark.id, bookmark.archived, executeWithOptimism]);
 
   const remove = useCallback(async () => {
     setState({ isLoading: true, error: null });
     try {
-      await deleteBookmark(bookmark.id);
+      await deleteBookmarkClient(bookmark.id);
       setState({ isLoading: false, error: null });
       return true;
     } catch (error) {

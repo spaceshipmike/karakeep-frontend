@@ -42,10 +42,23 @@ async function karakeepFetch<T>(
 }
 
 /**
- * Get all lists with hierarchy
+ * Get all lists with hierarchy (server-side)
  */
 export async function getLists(): Promise<List[]> {
   const data = await karakeepFetch<ListsResponse>("/lists");
+  return data.lists;
+}
+
+/**
+ * Get all lists with hierarchy (client-side)
+ * Fetches through Next.js API route to avoid exposing credentials
+ */
+export async function getListsClient(): Promise<List[]> {
+  const response = await fetch("/api/lists");
+  if (!response.ok) {
+    throw new Error(`Failed to fetch lists: ${response.statusText}`);
+  }
+  const data = await response.json();
   return data.lists;
 }
 
@@ -200,7 +213,7 @@ export async function getFavoritedBookmarks(
 // ============================================================================
 
 /**
- * Update bookmark properties (title, note, archived, favourited)
+ * Update bookmark properties (title, note, archived, favourited) - server-side
  */
 export async function updateBookmark(
   bookmarkId: string,
@@ -218,12 +231,51 @@ export async function updateBookmark(
 }
 
 /**
- * Delete a bookmark
+ * Update bookmark properties (title, note, archived, favourited) - client-side
+ * Calls through Next.js API route to keep credentials secure
+ */
+export async function updateBookmarkClient(
+  bookmarkId: string,
+  updates: {
+    title?: string;
+    note?: string;
+    archived?: boolean;
+    favourited?: boolean;
+  }
+): Promise<Bookmark> {
+  const response = await fetch(`/api/bookmarks/${bookmarkId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(updates),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to update bookmark: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Delete a bookmark (server-side)
  */
 export async function deleteBookmark(bookmarkId: string): Promise<void> {
   await karakeepFetch(`/bookmarks/${bookmarkId}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * Delete a bookmark (client-side)
+ * Calls through Next.js API route to keep credentials secure
+ */
+export async function deleteBookmarkClient(bookmarkId: string): Promise<void> {
+  const response = await fetch(`/api/bookmarks/${bookmarkId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to delete bookmark: ${response.statusText}`);
+  }
 }
 
 /**
