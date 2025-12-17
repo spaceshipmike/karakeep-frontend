@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import type { Bookmark } from "@/types";
 import { BookmarkCard, BookmarkCardCompact } from "./BookmarkCard";
 import { LoadMoreButton } from "./LoadMoreButton";
@@ -63,6 +63,14 @@ export function PaginatedBookmarkGrid({
   const [selectedSources, setSelectedSources] = useState<Array<"rss" | "extension" | "mobile" | "api">>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+
+  // Reset state when navigating to a different list/query
+  useEffect(() => {
+    setBookmarks(initialBookmarks);
+    setCursor(initialCursor);
+    setSelectedTags([]);
+    setSelectedSources([]);
+  }, [listId, query, initialBookmarks, initialCursor]);
 
   // Selection state
   const selection = useBookmarkSelection();
