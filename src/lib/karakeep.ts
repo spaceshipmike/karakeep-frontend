@@ -65,12 +65,19 @@ export async function getListsClient(): Promise<List[]> {
 /**
  * Get lists that a bookmark belongs to (client-side)
  */
-export async function getBookmarkListsClient(bookmarkId: string): Promise<{ lists: Array<{ id: string; name: string }> }> {
+export async function getBookmarkListsClient(bookmarkId: string): Promise<{ lists: Array<{ id: string; name: string; icon?: string }> }> {
   const response = await fetch(`/api/bookmarks/${bookmarkId}/lists`);
   if (!response.ok) {
     throw new Error(`Failed to fetch bookmark lists: ${response.statusText}`);
   }
   return response.json();
+}
+
+/**
+ * Get lists that a bookmark belongs to (server-side)
+ */
+export async function getBookmarkLists(bookmarkId: string): Promise<{ lists: Array<{ id: string; name: string; icon?: string }> }> {
+  return karakeepFetch<{ lists: Array<{ id: string; name: string; icon?: string }> }>(`/bookmarks/${bookmarkId}/lists`);
 }
 
 /**
@@ -370,5 +377,100 @@ export async function removeBookmarkFromList(
 
   if (!response.ok) {
     throw new Error(`Failed to remove bookmark from list: ${response.statusText}`);
+  }
+}
+
+// ============================================================================
+// List Management Functions
+// ============================================================================
+
+export interface CreateListInput {
+  name: string;
+  icon: string;
+  description?: string;
+  type?: "manual" | "smart";
+  query?: string;
+  parentId?: string | null;
+}
+
+export interface UpdateListInput {
+  name?: string;
+  icon?: string;
+  description?: string;
+  parentId?: string | null;
+  query?: string;
+}
+
+/**
+ * Create a new list (server-side)
+ */
+export async function createList(input: CreateListInput): Promise<List> {
+  return karakeepFetch<List>("/lists", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Create a new list (client-side)
+ */
+export async function createListClient(input: CreateListInput): Promise<List> {
+  const response = await fetch("/api/lists", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to create list: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Update a list (server-side)
+ */
+export async function updateList(listId: string, input: UpdateListInput): Promise<List> {
+  return karakeepFetch<List>(`/lists/${listId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Update a list (client-side)
+ */
+export async function updateListClient(listId: string, input: UpdateListInput): Promise<List> {
+  const response = await fetch(`/api/lists/${listId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to update list: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Delete a list (server-side)
+ */
+export async function deleteList(listId: string): Promise<void> {
+  await karakeepFetch(`/lists/${listId}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Delete a list (client-side)
+ */
+export async function deleteListClient(listId: string): Promise<void> {
+  const response = await fetch(`/api/lists/${listId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Failed to delete list: ${response.statusText}`);
   }
 }

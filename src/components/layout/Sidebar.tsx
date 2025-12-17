@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { EditListModal } from "@/components/list/EditListModal";
+import { Icon } from "@/components/ui/Icons";
 import type { List } from "@/types";
 
 interface SidebarProps {
@@ -30,7 +33,7 @@ const listIcons: Record<string, string> = {
   Homelab: "server",
   Inbox: "inbox",
   Tagless: "tag",
-  Favourites: "star",
+  Favorites: "star",
   Archive: "archive",
 };
 
@@ -38,216 +41,162 @@ function getListIcon(name: string): string {
   return listIcons[name] || "bookmark";
 }
 
-// Simple SVG icons to avoid external dependencies
-function Icon({ name, className }: { name: string; className?: string }) {
-  const icons: Record<string, React.ReactNode> = {
-    chat: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-      />
-    ),
-    circle: <circle cx="12" cy="12" r="8" />,
-    "credit-card": (
-      <>
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <line x1="2" y1="10" x2="22" y2="10" />
-      </>
-    ),
-    shirt: (
-      <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z" />
-    ),
-    code: (
-      <>
-        <polyline points="16 18 22 12 16 6" />
-        <polyline points="8 6 2 12 8 18" />
-      </>
-    ),
-    monitor: (
-      <>
-        <rect x="2" y="3" width="20" height="14" rx="2" />
-        <line x1="8" y1="21" x2="16" y2="21" />
-        <line x1="12" y1="17" x2="12" y2="21" />
-      </>
-    ),
-    terminal: (
-      <>
-        <polyline points="4 17 10 11 4 5" />
-        <line x1="12" y1="19" x2="20" y2="19" />
-      </>
-    ),
-    building: (
-      <>
-        <rect x="4" y="2" width="16" height="20" rx="2" />
-        <path d="M9 22v-4h6v4" />
-        <path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01" />
-      </>
-    ),
-    user: (
-      <>
-        <circle cx="12" cy="8" r="5" />
-        <path d="M20 21a8 8 0 10-16 0" />
-      </>
-    ),
-    home: (
-      <>
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </>
-    ),
-    folder: (
-      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-    ),
-    box: (
-      <>
-        <path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
-      </>
-    ),
-    music: (
-      <>
-        <path d="M9 18V5l12-2v13" />
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="18" cy="16" r="3" />
-      </>
-    ),
-    bot: (
-      <>
-        <rect x="3" y="11" width="18" height="10" rx="2" />
-        <circle cx="12" cy="5" r="2" />
-        <path d="M12 7v4" />
-        <line x1="8" y1="16" x2="8" y2="16" />
-        <line x1="16" y1="16" x2="16" y2="16" />
-      </>
-    ),
-    apple: (
-      <path d="M12 2C9.5 2 8 3.5 8 3.5S6.5 2 4 2c-3 0-4 3-4 5 0 4 6 10 12 15 6-5 12-11 12-15 0-2-1-5-4-5-2.5 0-4 1.5-4 1.5S14.5 2 12 2z" />
-    ),
-    server: (
-      <>
-        <rect x="2" y="2" width="20" height="8" rx="2" />
-        <rect x="2" y="14" width="20" height="8" rx="2" />
-        <line x1="6" y1="6" x2="6.01" y2="6" />
-        <line x1="6" y1="18" x2="6.01" y2="18" />
-      </>
-    ),
-    inbox: (
-      <>
-        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-        <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
-      </>
-    ),
-    tag: (
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01" />
-    ),
-    star: (
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    ),
-    archive: (
-      <>
-        <polyline points="21 8 21 21 3 21 3 8" />
-        <rect x="1" y="3" width="22" height="5" />
-        <line x1="10" y1="12" x2="14" y2="12" />
-      </>
-    ),
-    bookmark: (
-      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
-    ),
-    search: (
-      <>
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      </>
-    ),
-    menu: (
-      <>
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-      </>
-    ),
-    x: (
-      <>
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </>
-    ),
-  };
-
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      {icons[name] || icons.bookmark}
-    </svg>
-  );
+interface ListItemProps {
+  list: List;
+  isActive: boolean;
+  depth?: number;
+  onEdit?: (list: List) => void;
+  allLists: List[];
+  expandedIds: Set<string>;
+  onToggleExpand: (id: string) => void;
+  pathname: string;
 }
 
 function ListItem({
   list,
   isActive,
   depth = 0,
-}: {
-  list: List;
-  isActive: boolean;
-  depth?: number;
-}) {
+  onEdit,
+  allLists,
+  expandedIds,
+  onToggleExpand,
+  pathname,
+}: ListItemProps) {
   const href = list.query ? `/search?q=${encodeURIComponent(list.query)}` : `/list/${list.id}`;
+  const isEditable = !list.id.startsWith("_") && !list.query; // Not built-in and not smart list
+
+  // Find children of this list
+  const children = allLists.filter((l) => l.parentId === list.id);
+  const hasChildren = children.length > 0;
+  const isExpanded = expandedIds.has(list.id);
+
+  // Calculate indentation - cap at 3 levels (48px)
+  const indentLevel = Math.min(depth, 3);
+  const marginLeft = depth > 0 ? `${indentLevel * 16}px` : "0";
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive
-          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-          : "text-sidebar-foreground/80",
-        depth > 0 && "ml-4"
-      )}
-    >
-      <Icon
-        name={getListIcon(list.name)}
-        className={cn(
-          "shrink-0 transition-colors",
-          isActive
-            ? "text-sidebar-primary"
-            : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/70"
+    <>
+      <div className="group/item relative flex items-center" style={{ marginLeft }}>
+        {/* Chevron button for expandable lists */}
+        {hasChildren && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleExpand(list.id);
+            }}
+            className="shrink-0 rounded p-1 text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/70"
+            title={isExpanded ? "Collapse" : "Expand"}
+            aria-label={isExpanded ? "Collapse" : "Expand"}
+          >
+            <Icon name={isExpanded ? "chevron-down" : "chevron-right"} size={14} />
+          </button>
         )}
-      />
-      <span className="truncate">{list.name}</span>
-    </Link>
+
+        <Link
+          href={href}
+          className={cn(
+            "flex flex-1 items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            isActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "text-sidebar-foreground/80",
+            !hasChildren && "ml-7" // Add left margin when no chevron to align with items that have chevrons
+          )}
+        >
+          <Icon
+            name={list.icon || getListIcon(list.name)}
+            className={cn(
+              "shrink-0 transition-colors",
+              isActive
+                ? "text-sidebar-primary"
+                : "text-sidebar-foreground/50 group-hover/item:text-sidebar-foreground/70"
+            )}
+          />
+          <span className="truncate">{list.name}</span>
+        </Link>
+        {isEditable && onEdit && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit(list);
+            }}
+            className="absolute right-1 rounded p-1 text-sidebar-foreground/30 opacity-0 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground group-hover/item:opacity-100"
+            title="Edit collection"
+            aria-label="Edit collection"
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {/* Recursively render children when expanded */}
+      {hasChildren && isExpanded && (
+        <>
+          {children.map((child) => {
+            const childIsActive = pathname === `/list/${child.id}`;
+            return (
+              <ListItem
+                key={child.id}
+                list={child}
+                isActive={childIsActive}
+                depth={depth + 1}
+                onEdit={onEdit}
+                allLists={allLists}
+                expandedIds={expandedIds}
+                onToggleExpand={onToggleExpand}
+                pathname={pathname}
+              />
+            );
+          })}
+        </>
+      )}
+    </>
   );
 }
 
 export function Sidebar({ lists, className }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const currentQuery = searchParams.get("q") || "";
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingList, setEditingList] = useState<List | null>(null);
 
-  // Organize lists into top-level and children
-  const topLevelLists = lists.filter((l) => !l.parentId);
-  const childrenByParent = lists.reduce(
-    (acc, list) => {
-      if (list.parentId) {
-        if (!acc[list.parentId]) acc[list.parentId] = [];
-        acc[list.parentId].push(list);
+  // State for expanded/collapsed lists - initialize with all lists expanded
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const hasChildren = (listId: string) => lists.some((l) => l.parentId === listId);
+    return new Set(lists.filter((l) => hasChildren(l.id)).map((l) => l.id));
+  });
+
+  // Toggle expand/collapse for a list
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
       }
-      return acc;
-    },
-    {} as Record<string, List[]>
-  );
+      return next;
+    });
+  };
+
+  // Organize lists into top-level only (children are handled recursively by ListItem)
+  const topLevelLists = lists.filter((l) => !l.parentId);
 
   // Separate smart lists (have query) from regular lists
   const apiSmartLists = topLevelLists.filter((l) => l.query);
@@ -255,7 +204,7 @@ export function Sidebar({ lists, className }: SidebarProps) {
 
   // Add built-in smart lists that aren't in the API
   const builtInSmartLists: List[] = [
-    { id: "_favourites", name: "Favourites", icon: "star", query: "is:fav", parentId: null },
+    { id: "_favorites", name: "Favorites", icon: "star", query: "is:fav", parentId: null },
     { id: "_archive", name: "Archive", icon: "archive", query: "is:archived", parentId: null },
   ];
   const smartLists = [...apiSmartLists, ...builtInSmartLists];
@@ -290,6 +239,10 @@ export function Sidebar({ lists, className }: SidebarProps) {
                   key={list.id}
                   list={list}
                   isActive={pathname === "/search" && currentQuery === list.query}
+                  allLists={lists}
+                  expandedIds={expandedIds}
+                  onToggleExpand={toggleExpand}
+                  pathname={pathname}
                 />
               ))}
             </div>
@@ -328,26 +281,39 @@ export function Sidebar({ lists, className }: SidebarProps) {
 
         {/* Regular Lists Section */}
         <div>
-          <h2 className="mb-2 px-3 font-mono text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/40">
-            Collections
-          </h2>
+          <div className="mb-2 flex items-center justify-between px-3">
+            <h2 className="font-mono text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/40">
+              Collections
+            </h2>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="rounded p-0.5 text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title="New collection"
+              aria-label="Create new collection"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
           <div className="space-y-0.5">
             {regularLists.map((list) => (
-              <div key={list.id}>
-                <ListItem
-                  list={list}
-                  isActive={pathname === `/list/${list.id}`}
-                />
-                {/* Render children if any */}
-                {childrenByParent[list.id]?.map((child) => (
-                  <ListItem
-                    key={child.id}
-                    list={child}
-                    isActive={pathname === `/list/${child.id}`}
-                    depth={1}
-                  />
-                ))}
-              </div>
+              <ListItem
+                key={list.id}
+                list={list}
+                isActive={pathname === `/list/${list.id}`}
+                onEdit={setEditingList}
+                allLists={lists}
+                expandedIds={expandedIds}
+                onToggleExpand={toggleExpand}
+                pathname={pathname}
+              />
             ))}
           </div>
         </div>
@@ -359,8 +325,29 @@ export function Sidebar({ lists, className }: SidebarProps) {
           {lists.length} lists
         </p>
       </div>
+
+      {/* Create List Modal */}
+      <EditListModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          // Refresh the page to show the new list
+          router.refresh();
+        }}
+        allLists={lists}
+      />
+
+      {/* Edit List Modal */}
+      <EditListModal
+        isOpen={!!editingList}
+        list={editingList ?? undefined}
+        onClose={() => setEditingList(null)}
+        onSuccess={() => {
+          setEditingList(null);
+          router.refresh();
+        }}
+        allLists={lists}
+      />
     </aside>
   );
 }
-
-export { Icon };
