@@ -63,6 +63,17 @@ export async function getListsClient(): Promise<List[]> {
 }
 
 /**
+ * Get lists that a bookmark belongs to (client-side)
+ */
+export async function getBookmarkListsClient(bookmarkId: string): Promise<{ lists: Array<{ id: string; name: string }> }> {
+  const response = await fetch(`/api/bookmarks/${bookmarkId}/lists`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch bookmark lists: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
  * Search and paginate bookmarks
  */
 export async function searchBookmarks(

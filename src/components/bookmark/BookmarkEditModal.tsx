@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { Bookmark, List } from "@/types";
 import { useBookmarkMutation } from "@/hooks/useBookmarkMutation";
 import { useToast } from "@/components/ui/ToastProvider";
-import { getListsClient } from "@/lib/karakeep";
+import { getListsClient, getBookmarkListsClient } from "@/lib/karakeep";
 import { cn } from "@/lib/utils";
 
 interface BookmarkEditModalProps {
@@ -30,6 +30,7 @@ export function BookmarkEditModal({
   const [note, setNote] = useState(bookmark.note || "");
   const [tagInput, setTagInput] = useState("");
   const [lists, setLists] = useState<List[]>([]);
+  const [memberListIds, setMemberListIds] = useState<Set<string>>(new Set());
   const [isLoadingLists, setIsLoadingLists] = useState(false);
   const toast = useToast();
   const mutation = useBookmarkMutation(bookmark, onUpdate);
@@ -40,12 +41,18 @@ export function BookmarkEditModal({
     setNote(bookmark.note || "");
   }, [bookmark.id, bookmark.title, bookmark.note]);
 
-  // Load lists when modal opens
+  // Load lists and bookmark membership when modal opens
   useEffect(() => {
     if (isOpen) {
       setIsLoadingLists(true);
-      getListsClient()
-        .then(setLists)
+      Promise.all([
+        getListsClient(),
+        getBookmarkListsClient(bookmark.id),
+      ])
+        .then(([allLists, membership]) => {
+          setLists(allLists);
+          setMemberListIds(new Set(membership.lists.map((l) => l.id)));
+        })
         .catch((err) => {
           console.error("Failed to load lists:", err);
           toast.error("Failed to load lists");
@@ -53,7 +60,7 @@ export function BookmarkEditModal({
         .finally(() => setIsLoadingLists(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]); // toast excluded: stable context, only used for error reporting
+  }, [isOpen, bookmark.id]); // toast excluded: stable context, only used for error reporting
 
   if (!isOpen) return null;
 
@@ -132,6 +139,11 @@ export function BookmarkEditModal({
     if (isInList) {
       const result = await mutation.removeFromList(listId);
       if (result) {
+        setMemberListIds((prev) => {
+          const next = new Set(prev);
+          next.delete(listId);
+          return next;
+        });
         toast.success("Removed from list");
       } else if (mutation.error) {
         toast.error(mutation.error);
@@ -139,15 +151,13 @@ export function BookmarkEditModal({
     } else {
       const result = await mutation.addToList(listId);
       if (result) {
+        setMemberListIds((prev) => new Set(prev).add(listId));
         toast.success("Added to list");
       } else if (mutation.error) {
         toast.error(mutation.error);
       }
     }
   };
-
-  // Note: We don't have list membership info on the bookmark, so we'll show all lists
-  // In a real implementation, you'd fetch which lists this bookmark belongs to
   const manualLists = lists.filter((list) => !list.query);
 
   return (
@@ -385,9 +395,7 @@ export function BookmarkEditModal({
             ) : manualLists.length > 0 ? (
               <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
                 {manualLists.map((list) => {
-                  // Note: We don't have membership info, so all lists are shown as unchecked
-                  // In production, you'd fetch membership data
-                  const isInList = false;
+                  const isInList = memberListIds.has(list.id);
 
                   return (
                     <label
