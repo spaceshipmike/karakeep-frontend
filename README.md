@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KarakeepFE
+
+A beautiful, editorial-style frontend for [Karakeep](https://github.com/karakeep-app/karakeep) bookmark manager. Built for personal use with a magazine-inspired aesthetic.
+
+![Home Page](docs/screenshots/home.png)
+
+## Features
+
+- **Editorial Design** — Clean typography, generous whitespace, and large screenshot previews
+- **Collection Management** — Organize bookmarks into hierarchical collections with custom icons
+- **Smart Lists** — Dynamic lists based on search queries (Inbox, Tagless, custom filters)
+- **Tag Browser** — Visual tag cloud with filtering
+- **Dark Mode** — Full dark theme support
+- **Responsive** — Works on desktop and mobile
+- **AI Summaries** — Displays Karakeep's AI-generated summaries prominently
+
+## Screenshots
+
+<details>
+<summary>View more screenshots</summary>
+
+### Bookmark Detail
+![Bookmark Detail](docs/screenshots/detail.png)
+
+### Tags Page
+![Tags](docs/screenshots/tags.png)
+
+### Mobile View
+![Mobile](docs/screenshots/mobile.png)
+
+### Dark Mode
+![Dark Mode](docs/screenshots/dark-mode.png)
+
+</details>
+
+## Tech Stack
+
+- **Framework:** Next.js 14+ (App Router)
+- **Styling:** Tailwind CSS
+- **Components:** shadcn/ui primitives
+- **Icons:** Lucide React
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- A running [Karakeep](https://github.com/karakeep-app/karakeep) instance
+
+### Installation
+
+```bash
+git clone https://github.com/spaceshipmike/karakeep-frontend.git
+cd karakeep-frontend
+npm install
+```
+
+### Configuration
+
+Create a `.env.local` file:
+
+```env
+KARAKEEP_API_URL=http://localhost:3000
+KARAKEEP_API_KEY=your-api-key-here
+```
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── bookmark/[id]/      # Bookmark detail page
+│   ├── list/[slug]/        # Collection view
+│   ├── tag/[name]/         # Tag filter view
+│   ├── tags/               # Tag browser
+│   └── search/             # Search results
+├── components/
+│   ├── bookmark/           # Bookmark cards and grids
+│   ├── layout/             # Sidebar, Header, Footer
+│   ├── list/               # Collection management
+│   └── ui/                 # Shared UI components
+├── lib/                    # API client, utilities
+└── types/                  # TypeScript definitions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+KarakeepFE connects to Karakeep's REST API. Key endpoints:
 
-## Deploy on Vercel
+- `GET /api/v1/lists` — Fetch all collections
+- `POST /api/v1/bookmarks/search` — Search/paginate bookmarks
+- `GET /api/v1/bookmarks/:id` — Get single bookmark
+- `GET /api/assets/:id` — Serve screenshot images
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [Karakeep API docs](https://deepwiki.com/karakeep-app/karakeep) for details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
