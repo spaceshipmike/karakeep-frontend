@@ -28,14 +28,20 @@ export function AIStatusBadge({
   // Don't show anything if both are successful (or undefined)
   if (!hasPending) return null;
 
+  // Build descriptive tooltip
+  const pendingItems = [];
+  if (hasPendingSummarization) pendingItems.push("summary");
+  if (hasPendingTagging) pendingItems.push("tags");
+  const tooltip = `AI is generating ${pendingItems.join(" and ")} for this bookmark`;
+
   if (variant === "compact") {
     return (
       <div
         className={cn(
-          "flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-1 dark:bg-amber-950",
+          "group relative flex cursor-help items-center gap-1.5 rounded-full bg-amber-50 px-2 py-1 dark:bg-amber-950",
           className
         )}
-        title={`Processing: ${hasPendingSummarization ? "summary" : ""}${hasPendingSummarization && hasPendingTagging ? ", " : ""}${hasPendingTagging ? "tags" : ""}`}
+        title={tooltip}
       >
         <svg
           className="h-3 w-3 animate-spin text-amber-600 dark:text-amber-400"
@@ -59,6 +65,10 @@ export function AIStatusBadge({
         <span className="text-[10px] font-medium uppercase tracking-wider text-amber-700 dark:text-amber-300">
           AI
         </span>
+        {/* Enhanced tooltip on hover */}
+        <div className="pointer-events-none absolute right-0 top-full z-50 mt-1 w-48 scale-95 rounded-md bg-popover p-2 text-xs text-popover-foreground opacity-0 shadow-lg transition-all group-hover:scale-100 group-hover:opacity-100">
+          {tooltip}
+        </div>
       </div>
     );
   }
