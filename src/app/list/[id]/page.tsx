@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout";
 import { PaginatedBookmarkGrid } from "@/components/bookmark";
-import { getLists, getBookmarksByList } from "@/lib/karakeep";
+import { getLists, getBookmarksByList, searchBookmarks } from "@/lib/karakeep";
 import type { List } from "@/types";
 
 interface ListPageProps {
@@ -34,21 +34,26 @@ function findParentList(lists: List[], parentId: string | null): List | undefine
 export default async function ListPage({ params }: ListPageProps) {
   const { id } = await params;
 
-  // Fetch lists and bookmarks in parallel
-  const [lists, bookmarksResult] = await Promise.all([
-    getLists().catch(() => []),
-    getBookmarksByList(id, { limit: 50, sortOrder: "desc" }).catch(() => ({
-      bookmarks: [],
-      nextCursor: null,
-    })),
-  ]);
-
-  // Find the current list
+  // First fetch lists to find the current list and check if it's a smart list
+  const lists = await getLists().catch(() => []);
   const currentList = findListById(lists, id);
 
   if (!currentList) {
     notFound();
   }
+
+  // Smart lists use query-based search, regular lists use direct list endpoint
+  const isSmartList = !!currentList.query;
+
+  const bookmarksResult = isSmartList
+    ? await searchBookmarks(currentList.query!, { limit: 50, sortOrder: "desc" }).catch(() => ({
+        bookmarks: [],
+        nextCursor: null,
+      }))
+    : await getBookmarksByList(id, { limit: 50, sortOrder: "desc" }).catch(() => ({
+        bookmarks: [],
+        nextCursor: null,
+      }));
 
   const parentList = findParentList(lists, currentList.parentId);
   const { bookmarks, nextCursor } = bookmarksResult;
@@ -70,11 +75,12 @@ export default async function ListPage({ params }: ListPageProps) {
         </p>
       </header>
 
-      {/* Bookmarks grid with pagination */}
+      {/* Bookmarks grid with pagination - smart lists use query, regular lists use listId */}
       <PaginatedBookmarkGrid
         initialBookmarks={bookmarks}
         initialCursor={nextCursor}
-        listId={id}
+        listId={isSmartList ? undefined : id}
+        query={isSmartList ? currentList.query! : undefined}
         emptyTitle="No bookmarks"
         emptyMessage={`Add bookmarks to "${currentList.name}" to see them here.`}
       />
