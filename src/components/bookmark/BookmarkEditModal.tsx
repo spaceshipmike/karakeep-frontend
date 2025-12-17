@@ -5,6 +5,7 @@ import type { Bookmark, List } from "@/types";
 import { useBookmarkMutation } from "@/hooks/useBookmarkMutation";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getListsClient, getBookmarkListsClient } from "@/lib/karakeep";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
 
 interface BookmarkEditModalProps {
@@ -12,6 +13,7 @@ interface BookmarkEditModalProps {
   bookmark: Bookmark;
   onClose: () => void;
   onUpdate?: (updated: Bookmark) => void;
+  onDelete?: (id: string) => void;
 }
 
 /**
@@ -25,6 +27,7 @@ export function BookmarkEditModal({
   bookmark,
   onClose,
   onUpdate,
+  onDelete,
 }: BookmarkEditModalProps) {
   const [title, setTitle] = useState(bookmark.title || "");
   const [note, setNote] = useState(bookmark.note || "");
@@ -32,6 +35,7 @@ export function BookmarkEditModal({
   const [lists, setLists] = useState<List[]>([]);
   const [memberListIds, setMemberListIds] = useState<Set<string>>(new Set());
   const [isLoadingLists, setIsLoadingLists] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const toast = useToast();
   const mutation = useBookmarkMutation(bookmark, onUpdate);
 
@@ -61,6 +65,9 @@ export function BookmarkEditModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, bookmark.id]); // toast excluded: stable context, only used for error reporting
+
+  // Filter to manual lists only (exclude smart lists with queries)
+  const manualLists = lists.filter((list) => !list.query);
 
   if (!isOpen) return null;
 
@@ -100,10 +107,28 @@ export function BookmarkEditModal({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Don't handle shortcuts when typing in inputs
+    const target = e.target as HTMLElement;
+    const isInput =
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable;
+
     if (e.key === "Escape") {
       onClose();
     } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       handleSave();
+    } else if (!isInput && !mutation.isLoading) {
+      // Number keys 1-9 for quick list assignment
+      const num = parseInt(e.key, 10);
+      if (num >= 1 && num <= 9) {
+        const targetList = manualLists[num - 1];
+        if (targetList) {
+          e.preventDefault();
+          const isInList = memberListIds.has(targetList.id);
+          handleToggleList(targetList.id, isInList);
+        }
+      }
     }
   };
 
@@ -158,7 +183,6 @@ export function BookmarkEditModal({
       }
     }
   };
-  const manualLists = lists.filter((list) => !list.query);
 
   return (
     <div
@@ -395,8 +419,9 @@ export function BookmarkEditModal({
             ) : manualLists.length > 0 ? (
               <div className="mt-3 max-h-48 overflow-y-auto rounded-md border border-border bg-background p-3">
                 <div className="grid grid-cols-2 gap-1">
-                  {manualLists.map((list) => {
+                  {manualLists.map((list, index) => {
                     const isInList = memberListIds.has(list.id);
+                    const shortcutKey = index < 9 ? index + 1 : null;
 
                     return (
                       <label
@@ -410,6 +435,11 @@ export function BookmarkEditModal({
                           disabled={mutation.isLoading}
                           className="h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary"
                         />
+                        {shortcutKey && (
+                          <kbd className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                            {shortcutKey}
+                          </kbd>
+                        )}
                         <span className="shrink-0">{list.icon}</span>
                         <span className="truncate">{list.name}</span>
                       </label>
@@ -427,9 +457,30 @@ export function BookmarkEditModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
-          <p className="text-xs text-muted-foreground">
-            Press <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Esc</kbd> to cancel, <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">⌘</kbd>+<kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">Enter</kbd> to save
-          </p>
+          <div className="flex items-center gap-3">
+            {onDelete && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={mutation.isLoading}
+                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
+                  />
+                </svg>
+                Delete
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
@@ -453,6 +504,28 @@ export function BookmarkEditModal({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          const result = await mutation.remove();
+          if (result) {
+            toast.success("Bookmark deleted");
+            setShowDeleteConfirm(false);
+            onClose();
+            onDelete?.(bookmark.id);
+          } else if (mutation.error) {
+            toast.error(mutation.error);
+          }
+        }}
+        title="Delete bookmark?"
+        message="Are you sure you want to delete this bookmark? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   );
 }

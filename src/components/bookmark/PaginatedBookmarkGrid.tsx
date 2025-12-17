@@ -459,6 +459,10 @@ export function PaginatedBookmarkGrid({
             handleBookmarkUpdate(updated);
             setEditingBookmark(null);
           }}
+          onDelete={(id) => {
+            handleBookmarkDelete(id);
+            setEditingBookmark(null);
+          }}
         />
       )}
     </div>

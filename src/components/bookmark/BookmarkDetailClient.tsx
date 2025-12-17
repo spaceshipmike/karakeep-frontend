@@ -40,14 +40,16 @@ export function BookmarkDetailClient({
 
   return (
     <>
-      {/* Floating QuickActions */}
-      <div className="fixed bottom-6 right-6 z-30 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
-        <QuickActions
-          bookmark={bookmark}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          onEdit={() => setShowEditModal(true)}
-        />
+      {/* Floating QuickActions - positioned top right for visibility */}
+      <div className="fixed right-6 top-20 z-30 animate-in fade-in-0 slide-in-from-right-4 duration-300">
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/95 p-2 shadow-lg backdrop-blur-sm">
+          <QuickActions
+            bookmark={bookmark}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onEdit={() => setShowEditModal(true)}
+          />
+        </div>
       </div>
 
       {/* Edit Modal */}
@@ -56,6 +58,7 @@ export function BookmarkDetailClient({
         bookmark={bookmark}
         onClose={() => setShowEditModal(false)}
         onUpdate={handleUpdate}
+        onDelete={handleDelete}
       />
     </>
   );

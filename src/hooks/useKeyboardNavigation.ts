@@ -12,6 +12,8 @@ export interface KeyboardShortcutHandlers {
   onSelectAll?: () => void;
   onAddTags?: () => void;
   onAddToList?: () => void;
+  /** Called when 1-9 is pressed, with the list index (0-8) */
+  onQuickList?: (index: number) => void;
 }
 
 /**
@@ -28,6 +30,7 @@ export interface KeyboardShortcutHandlers {
  * - Delete/Backspace : Delete with confirmation
  * - t : Add tags
  * - l : Add to list
+ * - 1-9 : Quick add to list by position
  */
 export function useKeyboardNavigation(handlers?: KeyboardShortcutHandlers) {
   const router = useRouter();
@@ -117,6 +120,15 @@ export function useKeyboardNavigation(handlers?: KeyboardShortcutHandlers) {
           e.preventDefault();
           handlers.onAddToList();
         }
+
+        // 1-9 - Quick add to list by position
+        if (handlers.onQuickList) {
+          const num = parseInt(e.key, 10);
+          if (num >= 1 && num <= 9) {
+            e.preventDefault();
+            handlers.onQuickList(num - 1); // Convert to 0-indexed
+          }
+        }
       }
 
       // ? to show keyboard shortcuts help (future feature)
@@ -133,6 +145,7 @@ export function useKeyboardNavigation(handlers?: KeyboardShortcutHandlers) {
           "Delete = delete\n" +
           "t = add tags\n" +
           "l = add to list\n" +
+          "1-9 = quick add to list\n" +
           "Escape = close/unfocus"
         );
       }
