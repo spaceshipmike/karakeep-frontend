@@ -52,7 +52,8 @@ export function BookmarkEditModal({
         })
         .finally(() => setIsLoadingLists(false));
     }
-  }, [isOpen, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // toast excluded: stable context, only used for error reporting
 
   if (!isOpen) return null;
 

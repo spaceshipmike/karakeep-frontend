@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react";
 import { ToastContainer } from "./Toast";
 import type { Toast, ToastType } from "./Toast";
 
@@ -56,14 +56,18 @@ export function useToast() {
     throw new Error("useToast must be used within ToastProvider");
   }
 
-  return {
-    show: context.showToast,
-    success: (message: string, duration?: number) =>
-      context.showToast(message, "success", duration),
-    error: (message: string, duration?: number) =>
-      context.showToast(message, "error", duration),
-    info: (message: string, duration?: number) =>
-      context.showToast(message, "info", duration),
-    dismiss: context.dismissToast,
-  };
+  // Memoize to return stable reference, safe for useEffect dependencies
+  return useMemo(
+    () => ({
+      show: context.showToast,
+      success: (message: string, duration?: number) =>
+        context.showToast(message, "success", duration),
+      error: (message: string, duration?: number) =>
+        context.showToast(message, "error", duration),
+      info: (message: string, duration?: number) =>
+        context.showToast(message, "info", duration),
+      dismiss: context.dismissToast,
+    }),
+    [context]
+  );
 }
